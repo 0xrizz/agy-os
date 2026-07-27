@@ -1,0 +1,21 @@
+name: DDF Governance Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  governance-gate:
+    name: Run DDF Governance Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bash Environment & Execute Governance Gate
+        run: |
+          chmod +x harness/scripts/*.sh
+          bash harness/scripts/ddf-gate.sh --check-only

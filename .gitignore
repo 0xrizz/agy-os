@@ -1,0 +1,18 @@
+# Git Ignore for agy-harness
+
+# Ignore temporary subagent execution folders in .agents/
+.agents/*
+!.agents/rules/
+!.agents/agents/
+!.agents/skills/
+!.agents/workflows/
+!.agents/rules/*
+!.agents/agents/*
+!.agents/skills/*
+!.agents/workflows/*
+
+# OS and Node / Temporary files
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
