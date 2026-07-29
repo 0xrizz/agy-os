@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "components": [
+    {
+      "id": "framework:tailwind",
+      "family": "framework",
+      "description": "Tailwind CSS styling guidance.",
+      "modules": [
+        "framework-language"
+      ]
+    },
+    {
+      "id": "capability:cloud",
+      "family": "capability",
+      "description": "Cloudflare Wrangler, Workers, Pages, and Edge runtime guidance.",
+      "modules": [
+        "devops-infra"
+      ]
+    },
+    {
+      "id": "capability:cms",
+      "family": "capability",
+      "description": "Sanity CMS integration and API design skills.",
+      "modules": [
+        "research-apis"
+      ]
+    },
+    {
+      "id": "capability:testing",
+      "family": "capability",
+      "description": "Playwright E2E testing, TDD guide, and testing skills.",
+      "modules": [
+        "workflow-quality"
+      ]
+    },
+    {
+      "id": "capability:observability",
+      "family": "capability",
+      "description": "Telemetry, logging, and performance observability skills.",
+      "modules": [
+        "operator-workflows"
+      ]
+    }
+  ]
+}

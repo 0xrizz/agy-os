@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "profiles": {
+    "agy-developer": {
+      "description": "Tailored engineering profile for agy-os harness with Next.js, React, Tailwind, Prisma, Neon, Cloudflare, Sanity, testing, and agentic workflows.",
+      "modules": [
+        "rules-core",
+        "agents-core",
+        "commands-core",
+        "hooks-runtime",
+        "platform-configs",
+        "workflow-quality",
+        "framework-language",
+        "database",
+        "devops-infra",
+        "research-apis",
+        "operator-workflows",
+        "optimization-workflows",
+        "agentic-patterns",
+        "security"
+      ]
+    }
+  }
+}

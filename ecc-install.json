@@ -1,0 +1,38 @@
+{
+  "target": "antigravity",
+  "profile": "agy-developer",
+  "withComponents": [
+    "baseline:rules",
+    "baseline:commands",
+    "baseline:hooks",
+    "baseline:platform",
+    "baseline:workflow",
+    "lang:typescript",
+    "framework:react",
+    "framework:nextjs",
+    "framework:tailwind",
+    "capability:database",
+    "capability:cloud",
+    "capability:devops",
+    "capability:cms",
+    "capability:research",
+    "capability:testing",
+    "capability:observability",
+    "capability:operators",
+    "capability:optimization",
+    "capability:agentic",
+    "capability:security"
+  ],
+  "withoutComponents": [],
+  "configVersion": 1,
+  "tokenBudget": {
+    "maxTokens": 250000,
+    "estimatedTokens": 223000,
+    "utilizationPercent": 89.2,
+    "targetRange": [
+      85.0,
+      95.0
+    ],
+    "status": "PASS"
+  }
+}
