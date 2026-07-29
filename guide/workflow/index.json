@@ -1,0 +1,336 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "last_updated": "2026-07-29",
+  "schema_author": "Explorer 3",
+  "workflows": [
+    {
+      "id": "UC01",
+      "slug": "01-target-patch-management",
+      "title": "Target Patch Management (Read-Only Protocol)",
+      "description": "Workflow untuk mengelola patch dan delta spec pada target repo read-only via staging harness/patches/",
+      "priority": "P0",
+      "stages": [
+        {
+          "step": "C1",
+          "name": "Exploration & Baseline Mining",
+          "file": "guide/workflow/01-target-patch-management/c1-exploration-analysis.md",
+          "commands": [
+            "/opsx-explore"
+          ],
+          "agents": [
+            "code-explorer",
+            "spec-miner"
+          ],
+          "mcp_tools": [
+            "context7",
+            "filesystem"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": true
+        },
+        {
+          "step": "C2",
+          "name": "Proposal & Spec Impact Planning",
+          "file": "guide/workflow/01-target-patch-management/c2-proposal-delta-spec.md",
+          "commands": [
+            "/opsx-propose"
+          ],
+          "agents": [
+            "planner",
+            "architect"
+          ],
+          "mcp_tools": [
+            "sequential-thinking"
+          ],
+          "hitl_gate": true,
+          "read_only_enforced": true
+        },
+        {
+          "step": "C3",
+          "name": "TDD Execution & Patch Staging",
+          "file": "guide/workflow/01-target-patch-management/c3-execution-patch-staging.md",
+          "commands": [
+            "/opsx-apply"
+          ],
+          "agents": [
+            "spec-to-test",
+            "tdd-guide",
+            "build-error-resolver"
+          ],
+          "mcp_tools": [
+            "filesystem",
+            "playwright"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": true
+        },
+        {
+          "step": "C4",
+          "name": "4-Step Spec Review & Verification",
+          "file": "guide/workflow/01-target-patch-management/c4-review-verification.md",
+          "commands": [
+            "/review-pr"
+          ],
+          "agents": [
+            "code-reviewer",
+            "security-reviewer",
+            "pr-test-analyzer"
+          ],
+          "mcp_tools": [
+            "github"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": true
+        },
+        {
+          "step": "C5",
+          "name": "Delta Writing, Sync & Archiving",
+          "file": "guide/workflow/01-target-patch-management/c5-delivery-archiving.md",
+          "commands": [
+            "/opsx-sync",
+            "/opsx-archive"
+          ],
+          "agents": [
+            "spec-delta-writer",
+            "spec-freshness-checker",
+            "doc-updater"
+          ],
+          "mcp_tools": [
+            "memory",
+            "github"
+          ],
+          "hitl_gate": true,
+          "read_only_enforced": false
+        }
+      ]
+    },
+    {
+      "id": "UC02",
+      "slug": "02-feature-development",
+      "title": "Feature Development (SDD Lifecycle & Per-PR Delta)",
+      "description": "Pengembangan fitur baru menggunakan alur SDD terintegrasi PR dan per-PR delta spec",
+      "priority": "P3",
+      "stages": [
+        {
+          "step": "C1",
+          "name": "Exploration & Requirement Mining",
+          "file": "guide/workflow/02-feature-development/c1-exploration-analysis.md",
+          "commands": [
+            "/opsx-explore"
+          ],
+          "agents": [
+            "code-explorer",
+            "spec-miner"
+          ],
+          "mcp_tools": [
+            "context7"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": false
+        },
+        {
+          "step": "C2",
+          "name": "Proposal & Spec Impact Planning",
+          "file": "guide/workflow/02-feature-development/c2-proposal-delta-spec.md",
+          "commands": [
+            "/opsx-propose"
+          ],
+          "agents": [
+            "planner",
+            "architect"
+          ],
+          "mcp_tools": [
+            "sequential-thinking"
+          ],
+          "hitl_gate": true,
+          "read_only_enforced": false
+        },
+        {
+          "step": "C3",
+          "name": "TDD Implementation & Code Gen",
+          "file": "guide/workflow/02-feature-development/c3-execution-patch-staging.md",
+          "commands": [
+            "/opsx-apply"
+          ],
+          "agents": [
+            "spec-to-test",
+            "tdd-guide",
+            "orch-spec-delta"
+          ],
+          "mcp_tools": [
+            "filesystem"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": false
+        },
+        {
+          "step": "C4",
+          "name": "Multi-Agent Review & Spec Check",
+          "file": "guide/workflow/02-feature-development/c4-review-verification.md",
+          "commands": [
+            "/review-pr"
+          ],
+          "agents": [
+            "code-reviewer",
+            "security-reviewer",
+            "typescript-reviewer"
+          ],
+          "mcp_tools": [
+            "github"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": false
+        },
+        {
+          "step": "C5",
+          "name": "Delta Spec Writing, Sync & Archive",
+          "file": "guide/workflow/02-feature-development/c5-delivery-archiving.md",
+          "commands": [
+            "/opsx-sync",
+            "/opsx-archive"
+          ],
+          "agents": [
+            "spec-delta-writer",
+            "spec-freshness-checker"
+          ],
+          "mcp_tools": [
+            "memory",
+            "github"
+          ],
+          "hitl_gate": true,
+          "read_only_enforced": false
+        }
+      ]
+    },
+    {
+      "id": "UC03",
+      "slug": "03-code-review-qa",
+      "title": "Code Review & Quality Assurance",
+      "description": "Multi-agent review pipeline dengan 4-step spec compliance check",
+      "priority": "P4",
+      "stages": [
+        {
+          "step": "C1",
+          "name": "Multi-Agent Review Execution",
+          "file": "guide/workflow/03-code-review-qa/review-workflow.md",
+          "commands": [
+            "/review-pr",
+            "/code-review"
+          ],
+          "agents": [
+            "code-reviewer",
+            "security-reviewer",
+            "pr-test-analyzer"
+          ],
+          "mcp_tools": [
+            "github"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": true
+        },
+        {
+          "step": "C2",
+          "name": "4-Step Spec Compliance Verification",
+          "file": "guide/workflow/03-code-review-qa/spec-compliance.md",
+          "commands": [
+            "/code-review"
+          ],
+          "agents": [
+            "code-reviewer"
+          ],
+          "mcp_tools": [
+            "filesystem"
+          ],
+          "hitl_gate": true,
+          "read_only_enforced": true
+        }
+      ]
+    },
+    {
+      "id": "UC04",
+      "slug": "04-security-audit",
+      "title": "Security Audit & Spec Fuzzing",
+      "description": "Audit keamanan sistem dan fuzzer spec input adversaria",
+      "priority": "P4",
+      "stages": [
+        {
+          "step": "C1",
+          "name": "Security Audit Workflow",
+          "file": "guide/workflow/04-security-audit/security-workflow.md",
+          "commands": [
+            "/security-scan"
+          ],
+          "agents": [
+            "security-reviewer"
+          ],
+          "mcp_tools": [
+            "filesystem"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": true
+        },
+        {
+          "step": "C2",
+          "name": "Spec Fuzzing & Adversarial Testing",
+          "file": "guide/workflow/04-security-audit/spec-fuzzing.md",
+          "commands": [
+            "/security-scan"
+          ],
+          "agents": [
+            "spec-fuzzer"
+          ],
+          "mcp_tools": [
+            "filesystem"
+          ],
+          "hitl_gate": true,
+          "read_only_enforced": true
+        }
+      ]
+    },
+    {
+      "id": "UC05",
+      "slug": "05-documentation-sync",
+      "title": "Documentation & Spec Freshness Sync",
+      "description": "Singkronisasi dokumentasi otomatis dan audit kesegaran spec",
+      "priority": "P4",
+      "stages": [
+        {
+          "step": "C1",
+          "name": "Doc & Codemaps Sync Workflow",
+          "file": "guide/workflow/05-documentation-sync/doc-sync-workflow.md",
+          "commands": [
+            "/update-docs",
+            "/update-codemaps"
+          ],
+          "agents": [
+            "doc-updater"
+          ],
+          "mcp_tools": [
+            "filesystem",
+            "memory"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": false
+        },
+        {
+          "step": "C2",
+          "name": "Spec Freshness Audit & Hash Check",
+          "file": "guide/workflow/05-documentation-sync/freshness-audit.md",
+          "commands": [
+            "/opsx-sync"
+          ],
+          "agents": [
+            "spec-freshness-checker",
+            "spec-guardian"
+          ],
+          "mcp_tools": [
+            "filesystem"
+          ],
+          "hitl_gate": false,
+          "read_only_enforced": false
+        }
+      ]
+    }
+  ]
+}
