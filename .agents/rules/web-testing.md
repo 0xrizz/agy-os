@@ -1,15 +1,8 @@
 ---
-paths:
-  - "**/*.css"
-  - "**/*.scss"
-  - "**/*.sass"
-  - "**/*.less"
-  - "**/*.html"
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.vue"
-  - "**/*.svelte"
+trigger: model_decision
+description: Web frontend testing standards, DOM Testing Library patterns, visual regression testing, E2E browser check flows, and multi-breakpoint UI validation
 ---
+
 > This file extends [common/testing.md](../common/testing.md) with web-specific testing content.
 
 # Web Testing Rules

@@ -1,15 +1,8 @@
 ---
-paths:
-  - "**/*.css"
-  - "**/*.scss"
-  - "**/*.sass"
-  - "**/*.less"
-  - "**/*.html"
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.vue"
-  - "**/*.svelte"
+trigger: model_decision
+description: Common web frontend design patterns, compound component composition, state hydration, UI layout patterns, render delegation, and web architecture
 ---
+
 > This file extends [common/patterns.md](../common/patterns.md) with web-specific patterns.
 
 # Web Patterns

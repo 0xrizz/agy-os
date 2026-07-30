@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Security guidelines, mandatory security checks before commit, secret management, and security response protocols
+---
+
 # Security Guidelines
 
 ## Mandatory Security Checks

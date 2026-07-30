@@ -1,15 +1,8 @@
 ---
-paths:
-  - "**/*.css"
-  - "**/*.scss"
-  - "**/*.sass"
-  - "**/*.less"
-  - "**/*.html"
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.vue"
-  - "**/*.svelte"
+trigger: model_decision
+description: Web frontend coding style guidelines, HTML5 semantic markup standards, CSS file organization, component structure, asset placement, and web code formatting
 ---
+
 > This file extends [common/coding-style.md](../common/coding-style.md) with web-specific frontend content.
 
 # Web Coding Style

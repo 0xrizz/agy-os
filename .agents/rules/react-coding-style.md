@@ -1,12 +1,8 @@
 ---
-paths:
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/components/**/*.ts"
-  - "**/components/**/*.js"
-  - "**/hooks/**/*.ts"
-  - "**/hooks/**/*.js"
+trigger: glob
+globs: "**/*.{tsx,jsx}, **/components/**/*.{ts,js}, **/hooks/**/*.{ts,js}"
 ---
+
 # React Coding Style
 
 > This file extends [typescript/coding-style.md](../typescript/coding-style.md) and [common/coding-style.md](../common/coding-style.md) with React specific content.

@@ -1,12 +1,8 @@
 ---
-paths:
-  - "**/*.test.tsx"
-  - "**/*.test.jsx"
-  - "**/*.spec.tsx"
-  - "**/*.spec.jsx"
-  - "**/__tests__/**/*.ts"
-  - "**/__tests__/**/*.tsx"
+trigger: glob
+globs: "**/*.{test,spec}.{tsx,jsx}"
 ---
+
 # React Testing
 
 > This file extends [typescript/testing.md](../typescript/testing.md) and [common/testing.md](../common/testing.md) with React specific content.

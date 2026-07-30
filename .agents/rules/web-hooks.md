@@ -1,15 +1,8 @@
 ---
-paths:
-  - "**/*.css"
-  - "**/*.scss"
-  - "**/*.sass"
-  - "**/*.less"
-  - "**/*.html"
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.vue"
-  - "**/*.svelte"
+trigger: model_decision
+description: Frontend web hooks, browser event lifecycle management, DOM event listeners, ResizeObserver, IntersectionObserver, scroll handlers, and web tool execution patterns
 ---
+
 > This file extends [common/hooks.md](../common/hooks.md) with web-specific hook recommendations.
 
 # Web Hooks

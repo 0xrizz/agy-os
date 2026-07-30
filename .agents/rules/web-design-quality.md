@@ -1,15 +1,8 @@
 ---
-paths:
-  - "**/*.css"
-  - "**/*.scss"
-  - "**/*.sass"
-  - "**/*.less"
-  - "**/*.html"
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.vue"
-  - "**/*.svelte"
+trigger: model_decision
+description: Web design quality, visual aesthetics, UI layout consistency, responsive typography, spacing systems, micro-interactions, anti-template standards, and visual polish guidelines
 ---
+
 > This file extends [common/patterns.md](../common/patterns.md) with web-specific design-quality guidance.
 
 # Web Design Quality Standards

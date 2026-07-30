@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Hooks system rules, PreToolUse/PostToolUse/Stop hooks, auto-accept permissions, and TodoWrite best practices
+---
+
 # Hooks System
 
 ## Hook Types

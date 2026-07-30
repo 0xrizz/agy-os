@@ -1,12 +1,8 @@
 ---
-paths:
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/hooks/**/*.ts"
-  - "**/hooks/**/*.js"
-  - "**/use-*.ts"
-  - "**/use-*.tsx"
+trigger: glob
+globs: "**/*.{tsx,jsx}, **/hooks/**/*.{ts,js}"
 ---
+
 # React Hooks
 
 > This file covers **React hooks** (`useState`, `useEffect`, `useMemo`, `useCallback`, custom hooks) — NOT the Claude Code `hooks/` runtime system. Naming matches the per-language convention `rules/<lang>/hooks.md` used across this repo.

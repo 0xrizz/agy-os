@@ -20,6 +20,13 @@
 const fs = require('fs');
 const path = require('path');
 
+let formatRuleContent;
+try {
+  formatRuleContent = require('./update-rules-frontmatter-agy').formatRuleContent;
+} catch (e) {
+  formatRuleContent = (name, content) => content;
+}
+
 // Universal path resolution using forward slashes
 const rootDir = path.resolve(__dirname, '../../..').replace(/\\/g, '/');
 
@@ -258,17 +265,19 @@ function runInstallation(isDryRun, configPath) {
 
     if (fs.existsSync(srcMdSub)) {
       operations.push({
-        kind: 'copy-file',
+        kind: 'transform-rule-file',
+        ruleName: ruleItem,
         source: srcMdSub,
         dest: destFile,
-        description: `Copy rule ${subPath}.md to .agents/rules/${ruleItem}.md`
+        description: `Copy and format rule ${subPath}.md to .agents/rules/${ruleItem}.md`
       });
     } else if (fs.existsSync(srcMdFlat)) {
       operations.push({
-        kind: 'copy-file',
+        kind: 'transform-rule-file',
+        ruleName: ruleItem,
         source: srcMdFlat,
         dest: destFile,
-        description: `Copy rule ${ruleItem}.md to .agents/rules/${ruleItem}.md`
+        description: `Copy and format rule ${ruleItem}.md to .agents/rules/${ruleItem}.md`
       });
     } else {
       console.warn(`[Installer Engine] Warning: Declared rule source not found for: ${ruleItem}`);
@@ -357,6 +366,13 @@ function runInstallation(isDryRun, configPath) {
         ensureDirSync(path.dirname(op.dest));
         fs.copyFileSync(op.source, op.dest);
       }
+    } else if (op.kind === 'transform-rule-file') {
+      if (fs.existsSync(op.source)) {
+        ensureDirSync(path.dirname(op.dest));
+        const rawContent = fs.readFileSync(op.source, 'utf8');
+        const formattedContent = formatRuleContent(op.ruleName, rawContent);
+        fs.writeFileSync(op.dest, formattedContent, 'utf8');
+      }
     } else if (op.kind === 'scaffold-file') {
       ensureDirSync(path.dirname(op.dest));
       fs.writeFileSync(op.dest, op.content, 'utf8');
@@ -379,6 +395,14 @@ function runInstallation(isDryRun, configPath) {
     operationsCount: operations.length
   };
   fs.writeFileSync(`${targetPluginDir}/ecc-install-state.json`, JSON.stringify(installState, null, 2), 'utf8');
+
+  // Trigger Post-Install Transformation
+  try {
+    const { runPostInstallTransformation } = require('../post-install-agy');
+    runPostInstallTransformation();
+  } catch (err) {
+    console.error(`[Installer Engine] Warning: Failed to trigger post-install transformation: ${err.message}`);
+  }
 
   console.log(`[Installer Engine] SUCCESS: Installation completed successfully.`);
   console.log(`Install State written to ${targetPluginDir}/ecc-install-state.json`);

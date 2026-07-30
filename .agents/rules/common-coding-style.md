@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Coding style standards, immutability rules, KISS/DRY/YAGNI principles, file organization, error handling, naming conventions, and code smells to avoid
+---
+
 # Coding Style
 
 ## Immutability (CRITICAL)

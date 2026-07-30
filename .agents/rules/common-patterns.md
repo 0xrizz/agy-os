@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Common architecture patterns, skeleton projects, repository pattern, and API response format standards
+---
+
 # Common Patterns
 
 ## Skeleton Projects

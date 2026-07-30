@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Git workflow rules, conventional commit message formats, PR workflows, and git branch standards
+---
+
 # Git Workflow
 
 ## Commit Message Format
