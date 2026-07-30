@@ -19,6 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { mergeHooks } = require('./merge-hooks-agy.js');
 
 let formatRuleContent;
 try {
@@ -284,23 +285,19 @@ function runInstallation(isDryRun, configPath) {
     }
   }
 
-  // Hooks: Copy ECC/hooks/hooks.json directly to .agents/hooks.json
-  const eccHooksFile = `${eccSourceDir}/hooks/hooks.json`;
-  if (fs.existsSync(eccHooksFile)) {
-    operations.push({
-      kind: 'copy-file',
-      source: eccHooksFile,
-      dest: targetHooksFile,
-      description: 'Copy hooks configuration to .agents/hooks.json'
-    });
-  } else {
-    operations.push({
-      kind: 'scaffold-file',
-      dest: targetHooksFile,
-      content: JSON.stringify({ hooks: declaredHooks }, null, 2),
-      description: 'Scaffold hooks configuration at .agents/hooks.json'
-    });
-  }
+  // Hooks: Non-destructive merge of ECC hooks into .agents/hooks.json
+  const eccHooksFile = fs.existsSync(`${eccSourceDir}/hooks/hooks.json`)
+    ? `${eccSourceDir}/hooks/hooks.json`
+    : `${eccSourceDir}/hooks.json`;
+  const targetHooksBackupFile = `${targetHooksFile}.bak`;
+
+  operations.push({
+    kind: 'merge-hooks',
+    source: eccHooksFile,
+    dest: targetHooksFile,
+    backup: targetHooksBackupFile,
+    description: 'Non-destructively merge hooks configuration into .agents/hooks.json'
+  });
 
   // Platform: Scaffold platform assets under .agents/plugin/ecc/platform/
   operations.push({
@@ -382,6 +379,8 @@ function runInstallation(isDryRun, configPath) {
         ensureDirSync(`${op.dest}/${item}`);
         fs.writeFileSync(`${op.dest}/${item}/README.md`, `# Platform: ${item}\n`);
       }
+    } else if (op.kind === 'merge-hooks') {
+      mergeHooks(op.source, op.dest, op.backup);
     }
   }
 
