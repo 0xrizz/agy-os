@@ -107,6 +107,20 @@ Safely remove `.agents/` from the target repository without modifying source cod
 bash harness/bin/agy-harness.sh uninstall --target-dir d:/dev/target-repo
 ```
 
+### 📦 GitHub Package Installation (`pnpm`)
+
+This package is published to **GitHub Packages** as [`@0xrizz/agy-os`](file:///d:/dev/agy-os/package.json).
+
+- **Install via pnpm**:
+  ```bash
+  pnpm add @0xrizz/agy-os
+  ```
+- **Execute CLI directly via pnpm `dlx`**:
+  ```bash
+  pnpm dlx @0xrizz/agy-os status --target-dir d:/dev/target-repo
+  ```
+
+
 ---
 
 ## 📊 NPM & Diagnostic Commands
