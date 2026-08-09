@@ -4,6 +4,7 @@
 [![pnpm Version](https://img.shields.io/badge/pnpm-%3E%3D10-blue.svg)](file:///d:/dev/agy-os/package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](file:///d:/dev/agy-os/package.json)
 [![Architecture: Antigravity](https://img.shields.io/badge/Architecture-Antigravity--2.0-purple.svg)](file:///d:/dev/agy-os/docs/PRD.md)
+[![Runbook: Operational](https://img.shields.io/badge/Runbook-RUNBOOK.md-orange.svg)](file:///d:/dev/agy-os/RUNBOOK.md)
 
 **AGY-OS** is an agentic workspace harness designed for advanced AI software engineering on the Google Antigravity platform. It integrates the **Everything-as-Code (ECC)** ecosystem—a comprehensive collection of specialized subagents, rules, skills, workflows, and lifecycle hooks—tailored specifically for predictable, token-governed, multi-repository agent operation.
 
@@ -74,8 +75,17 @@ d:/dev/agy-os/
 ├── test/
 │   └── repo-experiment-01/            # Minimal Sandbox Target for End-to-End Testing
 ├── AGENTS.md                          # Harness Governance & Agent Behavior Rules
+├── RUNBOOK.md                         # Operational & Maintenance Runbook
 └── package.json                       # Project Dependencies & Scripts
 ```
+
+---
+
+## 📖 Operational Documentation & Navigation
+
+- 📘 **Single Source of Truth Global PRD**: [docs/PRD.md](file:///d:/dev/agy-os/docs/PRD.md)
+- 📙 **Operational Runbook & Maintenance Guide**: [RUNBOOK.md](file:///d:/dev/agy-os/RUNBOOK.md)
+- 📗 **Agent Behavior & Harness Governance Rules**: [AGENTS.md](file:///d:/dev/agy-os/AGENTS.md)
 
 ---
 
