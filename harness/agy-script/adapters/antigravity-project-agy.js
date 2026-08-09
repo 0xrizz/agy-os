@@ -89,9 +89,9 @@ module.exports = createInstallTargetAdapter({
           } else if (normalizedPath.startsWith('commands/')) {
             destPath = toForwardSlashes(path.join(baseRoot, '.agents', 'workflows', normalizedPath.slice('commands/'.length)));
           } else if (normalizedPath === 'agents') {
-            destPath = toForwardSlashes(path.join(targetRoot, 'agents'));
+            destPath = toForwardSlashes(path.join(baseRoot, '.agents', 'agents'));
           } else if (normalizedPath.startsWith('agents/')) {
-            destPath = toForwardSlashes(path.join(targetRoot, 'agents', normalizedPath.slice('agents/'.length)));
+            destPath = toForwardSlashes(path.join(baseRoot, '.agents', 'agents', normalizedPath.slice('agents/'.length)));
           } else if (normalizedPath === 'hooks') {
             destPath = toForwardSlashes(path.join(baseRoot, '.agents', 'hooks.json'));
           } else if (normalizedPath.startsWith('hooks/')) {

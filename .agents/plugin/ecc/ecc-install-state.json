@@ -1,5 +1,5 @@
 {
-  "installedAt": "2026-07-30T19:48:47.836Z",
+  "installedAt": "2026-08-02T17:36:56.034Z",
   "profile": "agy-developer",
   "target": "antigravity",
   "version": "1.0.0",
@@ -19,5 +19,5 @@
     "agentic-patterns",
     "security"
   ],
-  "operationsCount": 165
+  "operationsCount": 166
 }

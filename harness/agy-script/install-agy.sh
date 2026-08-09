@@ -5,9 +5,10 @@
 #   ./harness/agy-script/install-agy.sh [options]
 #
 # Options:
-#   --config <path>   Path to configuration file (default: ecc-install.json)
-#   --dry-run         Simulate installation without mutating files
-#   --help            Display help information
+#   --config <path>     Path to configuration file (default: ecc-install.json)
+#   --target-dir <path> Target repository directory for isolated installation (default: current working directory)
+#   --dry-run           Simulate installation without mutating files
+#   --help              Display help information
 #
 # All file paths produced or resolved use forward-slash formatting.
 

@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "PreToolUse": [],
+    "beforeSubmitPrompt": []
+  },
+  "permissions": {
+    "allow": []
+  }
+}

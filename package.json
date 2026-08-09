@@ -1,0 +1,32 @@
+{
+  "name": "agy-os",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Harness agent operating system",
+  "main": "index.js",
+  "packageManager": "pnpm@11.5.3+sha512.7ac1c919341c213a34dc0d02afb7143c5c26ac26ee8c4782deea821b8ac64d2134a081fd8941dae6e29bbb48f58dfc2b7fbceeccc07cb2f09d219d342a4969ed",
+  "engines": {
+    "node": ">=26",
+    "pnpm": ">=10"
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "audit": "node .agents/scripts/harness-audit.js",
+    "status": "node .agents/scripts/status.js",
+    "doctor": "node .agents/scripts/doctor.js",
+    "install:deps": "pnpm install --frozen-lockfile",
+    "verify:deps": "node harness/agy-script/verify-deps-agy.js",
+    "audit:deps": "pnpm audit --audit-level=high"
+  },
+  "dependencies": {
+    "sql.js": "^1.12.0",
+    "@iarna/toml": "^2.2.5",
+    "ajv": "^8.17.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs"
+}

@@ -1,0 +1,36 @@
+# Sub-repository Isolation (Prevents double scanning during root scan)
+ECC/
+OpenSpec/
+frameworks/openspec/
+
+# Stashed & Target Patch Staging & Diff Files
+graphify-out/
+harness/patches/
+*.patch
+*.diff
+
+# System Logs & Scratch Scripts
+.system_generated/
+scratch/
+*.log
+
+# IDE & Tooling Configs
+.vscode/
+.claude/
+.cursor/
+.gemini/
+.github/
+
+# Media, Assets, Fonts, Binaries & Source Maps
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
+*.ttf
+*.woff
+*.woff2
+*.wasm
+*.map

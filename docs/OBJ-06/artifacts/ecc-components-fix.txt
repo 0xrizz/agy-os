@@ -1,0 +1,83 @@
+# Agents
+## DELETE:
+- .agents\plugin\ecc\agents\chief-of-staff
+- .agents\plugin\ecc\agents\gan-evaluator
+- .agents\plugin\ecc\agents\gan-generator
+- .agents\plugin\ecc\agents\gan-planner
+
+# Workflows
+## EDIT:
+- update-codemaps: Target path docs/system/architecture/codemaps/
+- plan-prd:  Target Path docs/strategy/prd.md
+DELETE:
+- .agents\workflows\cost-report.md 0
+- .agents\workflows\epic-claim.md 0
+- .agents\workflows\epic-decompose.md 0
+- .agents\workflows\epic-publish.md 0
+- .agents\workflows\epic-review.md 0
+- .agents\workflows\epic-sync.md 0
+- .agents\workflows\epic-unblock.md 0
+- .agents\workflows\epic-validate.md 0
+- .agents\workflows\evolve.md 0
+- .agents\workflows\learn-eval.md 0
+- .agents\workflows\learn.md 0
+- .agents\workflows\multi-backend.md 0
+- .agents\workflows\multi-execute.md 0
+- .agents\workflows\multi-frontend.md 0
+- .agents\workflows\multi-plan.md 0
+- .agents\workflows\multi-workflow.md 0
+- .agents\workflows\orch-add-feature.md 0
+- .agents\workflows\orch-build-mvp.md 0
+- .agents\workflows\orch-change-feature.md 0
+- .agents\workflows\orch-fix-defect.md 0
+- .agents\workflows\orch-refine-code.md 0
+- .agents\workflows\orch-review.md 0
+- .agents\workflows\plan-canvas.md 0
+- .agents\workflows\promote.md 0
+- .agents\workflows\skill-create.md 0
+- .agents\workflows\skill-health.md 0
+
+# Rules:
+## ADD:
+- cloudflare-edge-runtime.md
+- cloudflare-pages-deploy.md
+- sanity-cms-federation.md
+- monorepo-workspace.md
+- tailwind-v4.md
+- prisma-neon-edge.md
+
+# Skills
+## ADD:
+- nextjs-turbopack
+- tdd-workflow
+- verification-loop
+- e2e-testing
+- error-handling
+- api-design
+- frontend-patterns
+- accessibility
+- git-workflow
+- motion-advanced
+- motion-foundations
+- motion-patterns
+- frontend-design-direction
+- frontend-a11y
+
+## DELETE:
+- .agents\skills\api-connector-builder 0
+- .agents\skills\automation-audit-ops 0
+- .agents\skills\autonomous-agent-harness 0
+- .agents\skills\autonomous-loops 0
+- .agents\skills\connections-optimizer 0
+- .agents\skills\content-hash-cache-pattern 0
+- .agents\skills\continuous-agent-loop 0
+- .agents\skills\email-ops 0
+- .agents\skills\knowledge-ops 0
+- .agents\skills\latency-critical-systems 0
+- .agents\skills\orch-add-feature 0
+- .agents\skills\orch-build-mvp 0
+- .agents\skills\orch-change-feature 0
+- .agents\skills\orch-fix-defect 0
+- .agents\skills\orch-pipeline 0
+- .agents\skills\orch-refine-code 0
+- .agents\skills\parallel-execution-optimizer 0

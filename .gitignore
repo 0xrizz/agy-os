@@ -1,2 +1,10 @@
-
+node_modules/
+archived-tools/
+.env
+.env.*
+!.env.example
+graphify-out/
+ECC/graphify-out/
+OpenSpec/graphify-out/
+frameworks/openspec/graphify-out/
 

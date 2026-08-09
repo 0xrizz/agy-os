@@ -4,14 +4,16 @@
  * Merges base manifests from ECC/manifests/ with custom overlay manifests from harness/manifests/,
  * enforces Fail-Fast duplicate ID validation, resolves profiles & component selections from ecc-install.json,
  * executes physical asset installation strictly for items in docs/OBJ-01/artifacts/ecc-items.json,
- * and outputs install state and dry-run execution reports.
+ * copies 100% self-contained runtime scripts into .agents/scripts/ and .agents/scripts/lib/,
+ * executes alignUnifiedScriptPaths transformer, and outputs install state and dry-run execution reports.
  * 
  * Target Paths:
- * - agents    -> .agents/plugin/ecc/agents/
+ * - agents    -> .agents/agents/
  * - rules     -> .agents/rules/<name>.md (flat layout)
  * - workflows -> .agents/workflows/<name>.md (flat layout)
  * - skills    -> .agents/skills/<skill-name>/SKILL.md
  * - hooks     -> .agents/hooks.json
+ * - scripts   -> .agents/scripts/ & .agents/scripts/lib/
  * - platform  -> .agents/plugin/ecc/platform/
  * 
  * Usage: node harness/agy-script/scripts/install-apply-agy.js [--dry-run] [--config <path>]
@@ -28,19 +30,35 @@ try {
   formatRuleContent = (name, content) => content;
 }
 
+// Parse CLI Arguments for targetDir resolution
+const args = process.argv.slice(2);
+let targetDirArg = null;
+const targetDirIdx = args.indexOf('--target-dir');
+if (targetDirIdx !== -1 && args[targetDirIdx + 1]) {
+  targetDirArg = args[targetDirIdx + 1];
+}
+
 // Universal path resolution using forward slashes
 const rootDir = path.resolve(__dirname, '../../..').replace(/\\/g, '/');
+const targetDir = targetDirArg
+  ? path.resolve(targetDirArg).replace(/\\/g, '/')
+  : rootDir;
 
 const baseManifestsDir = `${rootDir}/ECC/manifests`;
 const customManifestsDir = `${rootDir}/harness/manifests`;
 const defaultConfigFile = `${rootDir}/ecc-install.json`;
-const eccItemsFile = `${rootDir}/docs/OBJ-01/artifacts/ecc-items.json`;
+const eccItemsFile = fs.existsSync(`${rootDir}/harness/ecc-items.json`)
+  ? `${rootDir}/harness/ecc-items.json`
+  : `${rootDir}/docs/OBJ-01/artifacts/ecc-items.json`;
 
-const targetPluginDir = `${rootDir}/.agents/plugin/ecc`;
-const targetRulesDir = `${rootDir}/.agents/rules`;
-const targetWorkflowsDir = `${rootDir}/.agents/workflows`;
-const targetSkillsDir = `${rootDir}/.agents/skills`;
-const targetHooksFile = `${rootDir}/.agents/hooks.json`;
+const targetPluginDir = `${targetDir}/.agents/plugin/ecc`;
+const targetAgentsDir = `${targetDir}/.agents/agents`;
+const targetRulesDir = `${targetDir}/.agents/rules`;
+const targetWorkflowsDir = `${targetDir}/.agents/workflows`;
+const targetSkillsDir = `${targetDir}/.agents/skills`;
+const targetHooksFile = `${targetDir}/.agents/hooks.json`;
+const targetScriptsDir = `${targetDir}/.agents/scripts`;
+const targetLibDir = `${targetDir}/.agents/scripts/lib`;
 
 const eccSourceDir = `${rootDir}/ECC`;
 
@@ -76,6 +94,34 @@ function copyRecursiveSync(src, dest) {
   } else if (exists && stats.isFile()) {
     ensureDirSync(path.dirname(dest));
     fs.copyFileSync(src, dest);
+  }
+}
+
+/**
+ * Align relative import paths inside copied scripts to support 100% self-contained resolution.
+ * Rewrites require('../lib/...') to require('./lib/...') or relative library imports.
+ */
+function alignUnifiedScriptPaths(dir) {
+  if (!fs.existsSync(dir)) return;
+
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name).replace(/\\/g, '/');
+    if (entry.isDirectory()) {
+      alignUnifiedScriptPaths(fullPath);
+    } else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.mjs'))) {
+      let content = fs.readFileSync(fullPath, 'utf8');
+      let modified = false;
+
+      if (content.includes("require('../lib/")) {
+        content = content.replace(/require\(['"]\.\.\/lib\//g, "require('./lib/");
+        modified = true;
+      }
+
+      if (modified) {
+        fs.writeFileSync(fullPath, content, 'utf8');
+      }
+    }
   }
 }
 
@@ -196,24 +242,33 @@ function runInstallation(isDryRun, configPath) {
   // 5. Gather Operations
   const operations = [];
 
-  // Agents: Copy ONLY the 32 declared agents from ECC/agents/ to .agents/plugin/ecc/agents/
+  // Agents: Copy ONLY the declared agents to .agents/agents/
+  const masterAgentsDir = `${rootDir}/.agents/agents`;
   const eccAgentsDir = `${eccSourceDir}/agents`;
   for (const agentName of declaredAgents) {
+    const masterAgentDir = `${masterAgentsDir}/${agentName}`;
     const mdFile = `${eccAgentsDir}/${agentName}.md`;
     const agentDir = `${eccAgentsDir}/${agentName}`;
-    if (fs.existsSync(mdFile)) {
+    if (fs.existsSync(masterAgentDir)) {
+      operations.push({
+        kind: 'copy-dir',
+        source: masterAgentDir,
+        dest: `${targetAgentsDir}/${agentName}`,
+        description: `Copy agent dir ${agentName} to .agents/agents/`
+      });
+    } else if (fs.existsSync(mdFile)) {
       operations.push({
         kind: 'copy-file',
         source: mdFile,
-        dest: `${targetPluginDir}/agents/${agentName}.md`,
-        description: `Copy agent ${agentName}.md to .agents/plugin/ecc/agents/`
+        dest: `${targetAgentsDir}/${agentName}.md`,
+        description: `Copy agent ${agentName}.md to .agents/agents/`
       });
     } else if (fs.existsSync(agentDir)) {
       operations.push({
         kind: 'copy-dir',
         source: agentDir,
-        dest: `${targetPluginDir}/agents/${agentName}`,
-        description: `Copy agent dir ${agentName} to .agents/plugin/ecc/agents/`
+        dest: `${targetAgentsDir}/${agentName}`,
+        description: `Copy agent dir ${agentName} to .agents/agents/`
       });
     } else {
       console.warn(`[Installer Engine] Warning: Declared agent source not found: ${agentName}`);
@@ -254,17 +309,24 @@ function runInstallation(isDryRun, configPath) {
     }
   }
 
-  // Rules: Copy declared rules from ECC/rules/ directly to .agents/rules/<name>.md as flat markdown files
+  // Rules: Copy declared rules to .agents/rules/<name>.md as flat markdown files
+  const masterRulesDir = `${rootDir}/.agents/rules`;
   const eccRulesDir = `${eccSourceDir}/rules`;
   for (const ruleItem of declaredRules) {
-    // ruleItem is e.g. "common-agents" or "typescript-coding-style"
-    // Find matching source file in ECC/rules/
-    const subPath = ruleItem.replace('-', '/'); // e.g. "common/agents"
+    const masterRuleFile = `${masterRulesDir}/${ruleItem}.md`;
+    const subPath = ruleItem.replace('-', '/');
     const srcMdSub = `${eccRulesDir}/${subPath}.md`;
     const srcMdFlat = `${eccRulesDir}/${ruleItem}.md`;
     const destFile = `${targetRulesDir}/${ruleItem}.md`;
 
-    if (fs.existsSync(srcMdSub)) {
+    if (fs.existsSync(masterRuleFile)) {
+      operations.push({
+        kind: 'copy-file',
+        source: masterRuleFile,
+        dest: destFile,
+        description: `Copy rule ${ruleItem}.md to .agents/rules/${ruleItem}.md`
+      });
+    } else if (fs.existsSync(srcMdSub)) {
       operations.push({
         kind: 'transform-rule-file',
         ruleName: ruleItem,
@@ -283,6 +345,19 @@ function runInstallation(isDryRun, configPath) {
     } else {
       console.warn(`[Installer Engine] Warning: Declared rule source not found for: ${ruleItem}`);
     }
+  }
+
+  // Runtime Scripts: Copy scripts and shared libraries into .agents/scripts/ and .agents/scripts/lib/
+  const masterScriptsSrc = `${rootDir}/.agents/scripts`;
+  const eccScriptsSrc = `${eccSourceDir}/scripts`;
+  const scriptsSrc = fs.existsSync(masterScriptsSrc) ? masterScriptsSrc : eccScriptsSrc;
+  if (fs.existsSync(scriptsSrc)) {
+    operations.push({
+      kind: 'copy-dir',
+      source: scriptsSrc,
+      dest: targetScriptsDir,
+      description: 'Copy 100% self-contained runtime scripts and libraries to .agents/scripts/'
+    });
   }
 
   // Hooks: Non-destructive merge of ECC hooks into .agents/hooks.json
@@ -306,6 +381,14 @@ function runInstallation(isDryRun, configPath) {
     description: 'Scaffold platform entries in .agents/plugin/ecc/platform/'
   });
 
+  // Self-Contained Reference: Deploy ecc-items.json baseline into target
+  operations.push({
+    kind: 'copy-file',
+    source: eccItemsFile,
+    dest: `${targetDir}/.agents/ecc-items.json`,
+    description: `Deploy self-contained ecc-items.json reference into ${targetDir}/.agents/ecc-items.json`
+  });
+
   // 6. Execute Operations
   if (isDryRun) {
     console.log('\n--- DRY-RUN INSTALLATION PLAN ---');
@@ -319,8 +402,8 @@ function runInstallation(isDryRun, configPath) {
   console.log('\nExecuting physical asset copying & directory cleanup...');
 
   // Pre-clean destination directories to purge obsolete files
-  if (fs.existsSync(`${targetPluginDir}/agents`)) {
-    fs.rmSync(`${targetPluginDir}/agents`, { recursive: true, force: true });
+  if (fs.existsSync(targetAgentsDir)) {
+    fs.rmSync(targetAgentsDir, { recursive: true, force: true });
   }
   if (fs.existsSync(targetRulesDir)) {
     fs.rmSync(targetRulesDir, { recursive: true, force: true });
@@ -337,7 +420,8 @@ function runInstallation(isDryRun, configPath) {
     `${targetPluginDir}/rules`,
     `${targetPluginDir}/workflows`,
     `${targetPluginDir}/hooks`,
-    `${targetPluginDir}/platform`
+    `${targetPluginDir}/platform`,
+    `${targetPluginDir}/agents`
   ];
   for (const obsDir of obsoleteDirs) {
     if (fs.existsSync(obsDir)) {
@@ -347,7 +431,7 @@ function runInstallation(isDryRun, configPath) {
 
   // Re-create target directories
   ensureDirSync(targetPluginDir);
-  ensureDirSync(`${targetPluginDir}/agents`);
+  ensureDirSync(targetAgentsDir);
   ensureDirSync(targetRulesDir);
   ensureDirSync(targetWorkflowsDir);
   ensureDirSync(targetSkillsDir);
@@ -384,6 +468,9 @@ function runInstallation(isDryRun, configPath) {
     }
   }
 
+  // Align relative import paths inside copied scripts
+  alignUnifiedScriptPaths(targetScriptsDir);
+
   // Write install state file
   const installState = {
     installedAt: new Date().toISOString(),
@@ -398,7 +485,7 @@ function runInstallation(isDryRun, configPath) {
   // Trigger Post-Install Transformation
   try {
     const { runPostInstallTransformation } = require('../post-install-agy');
-    runPostInstallTransformation();
+    runPostInstallTransformation(targetDir);
   } catch (err) {
     console.error(`[Installer Engine] Warning: Failed to trigger post-install transformation: ${err.message}`);
   }
@@ -408,7 +495,6 @@ function runInstallation(isDryRun, configPath) {
 }
 
 // Parse CLI Arguments
-const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 let configPath = defaultConfigFile;
 
@@ -418,7 +504,7 @@ if (configIdx !== -1 && args[configIdx + 1]) {
 }
 
 if (args.includes('--help')) {
-  console.log('Usage: node harness/agy-script/scripts/install-apply-agy.js [--dry-run] [--config <path>]');
+  console.log('Usage: node harness/agy-script/scripts/install-apply-agy.js [--target-dir <path>] [--dry-run] [--config <path>]');
   process.exit(0);
 }
 

@@ -4,6 +4,7 @@
  * Ingests upstream ECC hooks.json and merges into target .agents/hooks.json
  * while strictly preserving AGY-native hook entries (post:agy-observation-envelope, pre:agy-guardrail),
  * pinning pre:agy-guardrail at PreToolUse index 0,
+ * transforming hook command script paths to point directly to .agents/scripts/*.js,
  * filtering out platform-incompatible hooks (stop:desktop-notify),
  * and creating an atomic backup at .agents/hooks.json.bak prior to writing.
  * 
@@ -24,14 +25,14 @@ const DEFAULT_EXCLUDE_IDS = [
   'stop:desktop-notify'
 ];
 
-// Canonical AGY-native hook definitions (used as fallback/scaffold if missing)
+// Canonical AGY-native hook definitions
 const CANONICAL_AGY_HOOKS = {
   'pre:agy-guardrail': {
     matcher: '*',
     hooks: [
       {
         type: 'command',
-        command: 'node .agents/hooks/scripts/pre-tool-guardrail-agy.js'
+        command: 'node .agents/scripts/pre-tool-guardrail-agy.js'
       }
     ],
     description: 'AGY pre-tool guardrail: inspect tool payloads for target repo READ-ONLY and backslash violations',
@@ -42,7 +43,7 @@ const CANONICAL_AGY_HOOKS = {
     hooks: [
       {
         type: 'command',
-        command: 'node .agents/hooks/scripts/observation-envelope-agy.js',
+        command: 'node .agents/scripts/observation-envelope-agy.js',
         timeout: 10
       }
     ],
@@ -52,14 +53,58 @@ const CANONICAL_AGY_HOOKS = {
 };
 
 /**
+ * Transforms hook command path strings to point to .agents/scripts/*.js
+ * and removes dynamic bootstrap shims that rely on CLAUDE_PLUGIN_ROOT.
+ * 
+ * @param {string} cmd - Command string to transform
+ * @returns {string} Transformed command string
+ */
+function transformHookCommand(cmd) {
+  if (typeof cmd !== 'string' || !cmd.trim()) return cmd;
+
+  // Handle run-with-flags.js pattern inside complex node -e shims or direct commands
+  if (cmd.includes('run-with-flags.js')) {
+    const matchShim = cmd.match(/['"]([a-zA-Z0-9_:-]+)['"]\s*,\s*['"](?:node\s+)?(?:[a-zA-Z0-9_\/.-]*\/)?([a-zA-Z0-9_-]+\.js)['"]\s*,\s*['"]([a-zA-Z0-9_,-]+)['"]/);
+    if (matchShim) {
+      const hookId = matchShim[1];
+      const scriptName = path.basename(matchShim[2]);
+      const profiles = matchShim[3] || 'standard,strict';
+      return `node .agents/scripts/run-with-flags.js ${hookId} .agents/scripts/${scriptName} ${profiles}`;
+    }
+
+    const matchDirect = cmd.match(/run-with-flags\.js\s+([^\s]+)\s+([^\s]+)(?:\s+([^\s"]+))?/);
+    if (matchDirect) {
+      const hookId = matchDirect[1];
+      const scriptName = path.basename(matchDirect[2]);
+      const profiles = matchDirect[3] || '';
+      return `node .agents/scripts/run-with-flags.js ${hookId} .agents/scripts/${scriptName}${profiles ? ' ' + profiles : ''}`;
+    }
+  }
+
+  // Remove inline node -e shims and rewrite script paths to .agents/scripts/
+  let transformed = cmd
+    .replace(/node\s+-e\s+".*?"\s+(node\s+)?/g, 'node ')
+    .replace(/(?:node\s+)?(?:ECC\/|\.agents\/hooks\/)?scripts\/hooks\/([a-zA-Z0-9_-]+\.js)/g, 'node .agents/scripts/$1')
+    .replace(/\.agents\/hooks\/scripts\/([a-zA-Z0-9_-]+\.js)/g, 'node .agents/scripts/$1');
+
+  if (cmd.includes('posttooluse-dispatcher.js')) {
+    const isAsync = cmd.includes('async');
+    const isSync = cmd.includes('sync');
+    const mode = isAsync ? ' async' : isSync ? ' sync' : '';
+    return `node .agents/scripts/posttooluse-dispatcher.js${mode}`;
+  }
+
+  transformed = transformed.replace(/^node\s+node\s+/, 'node ');
+  return transformed;
+}
+
+/**
  * Merge upstream ECC hooks into target hooks.json non-destructively.
  * 
  * @param {string} eccSourcePath - Path to upstream ECC hooks.json
  * @param {string} targetPath - Path to target .agents/hooks.json
  * @param {string} backupPath - Path to atomic backup .agents/hooks.json.bak
  * @param {Object} [options] - Optional override settings
- * @param {string[]} [options.preserveIds] - Array of hook IDs to preserve
- * @param {string[]} [options.excludeIds] - Array of hook IDs to filter out
  * @returns {Object} The merged hooks configuration object
  */
 function mergeHooks(eccSourcePath, targetPath, backupPath, options = {}) {
@@ -143,7 +188,6 @@ function mergeHooks(eccSourcePath, targetPath, backupPath, options = {}) {
     ...Object.keys(sourceHooksObj)
   ]));
 
-  // Ensure mandatory event categories exist if we need to scaffold AGY-native hooks
   if (!allEvents.includes('PreToolUse')) allEvents.push('PreToolUse');
   if (!allEvents.includes('PostToolUse')) allEvents.push('PostToolUse');
 
@@ -154,13 +198,12 @@ function mergeHooks(eccSourcePath, targetPath, backupPath, options = {}) {
     const mergedEntries = [];
     const seenIds = new Set();
 
-    // Helper to check if an entry matches excludeIds
     const isExcluded = (entry) => {
       if (entry.id && excludeIds.includes(entry.id)) return true;
       return false;
     };
 
-    // First pass: add entries from target (preserving AGY-native entries and target customizations)
+    // First pass: target entries
     for (const entry of targetEntries) {
       if (isExcluded(entry)) continue;
       if (entry.id) {
@@ -169,7 +212,7 @@ function mergeHooks(eccSourcePath, targetPath, backupPath, options = {}) {
       mergedEntries.push(entry);
     }
 
-    // Second pass: add entries from source if not already present or excluded
+    // Second pass: source entries
     for (const entry of sourceEntries) {
       if (isExcluded(entry)) continue;
       if (entry.id && seenIds.has(entry.id)) continue;
@@ -189,8 +232,19 @@ function mergeHooks(eccSourcePath, targetPath, backupPath, options = {}) {
       seenIds.add('post:agy-observation-envelope');
     }
 
-    // Filter out excluded IDs again just to be 100% sure
+    // Filter out excluded IDs again
     const finalEntries = mergedEntries.filter(e => !isExcluded(e));
+
+    // Transform command script paths for all final entries
+    for (const entry of finalEntries) {
+      if (Array.isArray(entry.hooks)) {
+        for (const h of entry.hooks) {
+          if (h.command) {
+            h.command = transformHookCommand(h.command);
+          }
+        }
+      }
+    }
 
     // Special pinning for PreToolUse: pre:agy-guardrail MUST be at index 0
     if (eventName === 'PreToolUse') {
@@ -240,6 +294,7 @@ if (require.main === module) {
 
 module.exports = {
   mergeHooks,
+  transformHookCommand,
   DEFAULT_PRESERVE_IDS,
   DEFAULT_EXCLUDE_IDS
 };

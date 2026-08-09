@@ -1,0 +1,7 @@
+{
+  "name": "ecc",
+  "version": "1.0.0",
+  "description": "Everything Claude Code harness plugin for AGY-OS",
+  "author": "AGY-OS",
+  "license": "MIT"
+}

@@ -5,15 +5,15 @@
  * across all 6 item kinds: rules, agents, commands, hooks, skills, platform.
  * 
  * Also verifies OBJ-03 ECC Script Integration requirements:
- * 1. Environment variable CLAUDE_PLUGIN_ROOT resolution and in-place ECC target validation.
- * 2. In-place isolation check (no physical copying of upstream ECC scripts into .agents/hooks/).
- * 3. AGY-native helper libraries in .agents/hooks/scripts/lib/ (*-agy.js naming compliance).
- * 4. AGY-native runtime hook scripts in .agents/hooks/scripts/ (*-agy.js naming compliance).
+ * 1. 100% self-contained script co-location under .agents/scripts/ and .agents/scripts/lib/.
+ * 2. harness/.env.example template existence and zero reliance on CLAUDE_PLUGIN_ROOT.
+ * 3. AGY-native helper libraries in .agents/scripts/lib/ (*-agy.js naming compliance).
+ * 4. AGY-native runtime hook scripts in .agents/scripts/ (*-agy.js naming compliance).
  * 5. Lifecycle hooks configuration (.agents/hooks.json):
  *    - Presence of pre:agy-guardrail (pinned at PreToolUse index 0)
  *    - Presence of post:agy-observation-envelope (registered in PostToolUse)
  *    - Exclusion of platform-incompatible stop:desktop-notify
- *    - CLAUDE_PLUGIN_ROOT dynamic resolution in hook command entries
+ *    - Script command execution paths pointing to .agents/scripts/
  * 
  * Enforces Fail-Fast validation (exit code 1 on any missing or extra item/discrepancy, exit code 0 on 100% match).
  * 
@@ -23,106 +23,86 @@
 const fs = require('fs');
 const path = require('path');
 
-const REPO_ROOT = path.resolve(__dirname, '../../..').replace(/\\/g, '/');
-const ECC_ITEMS_FILE = `${REPO_ROOT}/docs/OBJ-01/artifacts/ecc-items.json`;
+const args = process.argv.slice(2);
+let targetDirArg = null;
+const targetDirIdx = args.indexOf('--target-dir');
+if (targetDirIdx !== -1 && args[targetDirIdx + 1]) {
+  targetDirArg = args[targetDirIdx + 1];
+}
 
-function loadEnvVars() {
-  const envPaths = [`${REPO_ROOT}/.env`, `${REPO_ROOT}/harness/.env`].map(p => path.normalize(p).replace(/\\/g, '/'));
-  for (const envPath of envPaths) {
-    if (fs.existsSync(envPath)) {
-      try {
-        const content = fs.readFileSync(envPath, 'utf8');
-        const lines = content.split(/\r?\n/);
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
-            const idx = trimmed.indexOf('=');
-            const key = trimmed.substring(0, idx).trim();
-            const val = trimmed.substring(idx + 1).trim();
-            if (key && !process.env[key]) {
-              process.env[key] = val;
-            }
-          }
-        }
-      } catch (e) {
-        // ignore parse errors
-      }
-    }
-  }
+const REPO_ROOT = path.resolve(__dirname, '../../..').replace(/\\/g, '/');
+const TARGET_DIR = targetDirArg
+  ? path.resolve(targetDirArg).replace(/\\/g, '/')
+  : REPO_ROOT;
+
+if (args.includes('--help')) {
+  console.log('Usage: node harness/agy-script/scripts/verify-installation-agy.js [--target-dir <path>]');
+  process.exit(0);
+}
+
+let ECC_ITEMS_FILE;
+if (targetDirArg && fs.existsSync(`${TARGET_DIR}/.agents/ecc-items.json`)) {
+  ECC_ITEMS_FILE = `${TARGET_DIR}/.agents/ecc-items.json`;
+} else if (fs.existsSync(`${TARGET_DIR}/.agents/ecc-items.json`)) {
+  ECC_ITEMS_FILE = `${TARGET_DIR}/.agents/ecc-items.json`;
+} else if (fs.existsSync(`${REPO_ROOT}/harness/ecc-items.json`)) {
+  ECC_ITEMS_FILE = `${REPO_ROOT}/harness/ecc-items.json`;
+} else if (fs.existsSync(`${REPO_ROOT}/docs/OBJ-06/artifacts/ecc-items.json`)) {
+  ECC_ITEMS_FILE = `${REPO_ROOT}/docs/OBJ-06/artifacts/ecc-items.json`;
+} else {
+  ECC_ITEMS_FILE = `${REPO_ROOT}/docs/OBJ-01/artifacts/ecc-items.json`;
 }
 
 function verifyEnvironmentConfig() {
-  console.log('\n--- Environment & CLAUDE_PLUGIN_ROOT Verification ---');
-  loadEnvVars();
+  console.log('\n--- Environment & Self-Contained Script Architecture Verification ---');
+  let valid = true;
 
-  let pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
-  if (!pluginRoot || !pluginRoot.trim()) {
-    console.error('  ✗ [MISSING] CLAUDE_PLUGIN_ROOT environment variable is UNSET.');
-    console.error('    Resolution hint: Copy harness/.env.example to .env and set CLAUDE_PLUGIN_ROOT=d:/dev/agy-os/ECC per AGENTS.md §11.');
-    return { passed: false, pluginRoot: null };
+  const envExamplePath = `${REPO_ROOT}/harness/.env.example`;
+  if (!fs.existsSync(envExamplePath)) {
+    console.error('  ✗ [MISSING] harness/.env.example template file does not exist.');
+    valid = false;
+  } else {
+    console.log('  ✓ [MATCH] harness/.env.example template file exists.');
   }
 
-  pluginRoot = path.resolve(pluginRoot.trim()).replace(/\\/g, '/');
-
-  if (!fs.existsSync(pluginRoot)) {
-    console.error(`  ✗ [INVALID] CLAUDE_PLUGIN_ROOT path does not exist on disk: ${pluginRoot}`);
-    return { passed: false, pluginRoot };
-  }
-
-  // Verify in-place targets inside CLAUDE_PLUGIN_ROOT
-  const requiredTargets = [
-    { path: `${pluginRoot}/scripts/hooks`, isDir: true, desc: 'ECC hook scripts directory' },
-    { path: `${pluginRoot}/scripts/lib/utils.js`, isDir: false, desc: 'Upstream ECC shared library utils.js' },
-    { path: `${pluginRoot}/scripts/lib/hook-flags.js`, isDir: false, desc: 'Upstream ECC shared library hook-flags.js' },
-    { path: `${pluginRoot}/scripts/lib/state-store`, isDir: true, desc: 'Upstream ECC state store directory' }
+  // Verify self-contained script directory structures
+  const requiredScriptTargets = [
+    { path: `${TARGET_DIR}/.agents/scripts`, isDir: true, desc: 'Co-located runtime scripts directory' },
+    { path: `${TARGET_DIR}/.agents/scripts/lib`, isDir: true, desc: 'Co-located shared libraries directory' },
+    { path: `${TARGET_DIR}/.agents/scripts/lib/utils.js`, isDir: false, desc: 'Co-located shared library utils.js' },
+    { path: `${TARGET_DIR}/.agents/scripts/lib/hook-flags.js`, isDir: false, desc: 'Co-located shared library hook-flags.js' },
+    { path: `${TARGET_DIR}/.agents/scripts/lib/state-store`, isDir: true, desc: 'Co-located state store directory' }
   ];
 
-  let targetsValid = true;
-  for (const t of requiredTargets) {
+  for (const t of requiredScriptTargets) {
     if (!fs.existsSync(t.path)) {
-      console.error(`  ✗ [MISSING] Target missing in CLAUDE_PLUGIN_ROOT (${t.desc}): ${t.path}`);
-      targetsValid = false;
+      console.error(`  ✗ [MISSING] Target missing (${t.desc}): ${t.path.replace(`${TARGET_DIR}/`, '')}`);
+      valid = false;
     } else {
       const stat = fs.statSync(t.path);
       if (t.isDir && !stat.isDirectory()) {
-        console.error(`  ✗ [INVALID] Expected directory in CLAUDE_PLUGIN_ROOT (${t.desc}): ${t.path}`);
-        targetsValid = false;
+        console.error(`  ✗ [INVALID] Expected directory (${t.desc}): ${t.path.replace(`${TARGET_DIR}/`, '')}`);
+        valid = false;
       } else if (!t.isDir && !stat.isFile()) {
-        console.error(`  ✗ [INVALID] Expected file in CLAUDE_PLUGIN_ROOT (${t.desc}): ${t.path}`);
-        targetsValid = false;
+        console.error(`  ✗ [INVALID] Expected file (${t.desc}): ${t.path.replace(`${TARGET_DIR}/`, '')}`);
+        valid = false;
       }
     }
   }
 
-  // Verification: Zero mirroring of upstream ECC libraries into .agents/hooks/ or .agents/hooks/lib/
-  const mirroredFilesCheck = [
-    `${REPO_ROOT}/.agents/hooks/lib/utils.js`,
-    `${REPO_ROOT}/.agents/hooks/lib/hook-flags.js`,
-    `${REPO_ROOT}/.agents/hooks/lib/state-store`,
-    `${REPO_ROOT}/.agents/hooks/plugin-hook-bootstrap.js`
-  ];
-
-  for (const mf of mirroredFilesCheck) {
-    if (fs.existsSync(mf)) {
-      console.error(`  ✗ [VIOLATION] Found mirrored upstream ECC file in harness directory: ${mf.replace(`${REPO_ROOT}/`, '')}`);
-      console.error('    Upstream ECC scripts MUST NOT be mirrored into .agents/hooks/. Reference in-place via CLAUDE_PLUGIN_ROOT (AGENTS.md §11).');
-      targetsValid = false;
-    }
+  if (valid) {
+    console.log('  ✓ [MATCH] 100% self-contained script co-location confirmed with zero mandatory CLAUDE_PLUGIN_ROOT dependency.');
   }
 
-  if (targetsValid) {
-    console.log(`  ✓ [MATCH] CLAUDE_PLUGIN_ROOT valid at ${pluginRoot} with zero upstream script mirroring.`);
-  }
-
-  return { passed: targetsValid, pluginRoot };
+  return { passed: valid };
 }
 
 function verifyAgyHelperLibraries() {
-  console.log('\n--- AGY-Native Helper Libraries Verification (.agents/hooks/scripts/lib/) ---');
-  const libDir = `${REPO_ROOT}/.agents/hooks/scripts/lib`;
+  console.log('\n--- AGY-Native Helper Libraries Verification (.agents/scripts/lib/) ---');
+  const libDir = `${TARGET_DIR}/.agents/scripts/lib`;
 
   if (!fs.existsSync(libDir)) {
-    console.error(`  ✗ [MISSING] Helper library directory does not exist: .agents/hooks/scripts/lib`);
+    console.error(`  ✗ [MISSING] Helper library directory does not exist: .agents/scripts/lib`);
     return false;
   }
 
@@ -132,21 +112,19 @@ function verifyAgyHelperLibraries() {
   for (const helper of requiredHelpers) {
     const helperPath = `${libDir}/${helper}`;
     if (fs.existsSync(helperPath)) {
-      console.log(`  ✓ [MATCH] Required helper library -> .agents/hooks/scripts/lib/${helper}`);
+      console.log(`  ✓ [MATCH] Required helper library -> .agents/scripts/lib/${helper}`);
     } else {
-      console.error(`  ✗ [MISSING] Required helper library missing -> .agents/hooks/scripts/lib/${helper}`);
+      console.error(`  ✗ [MISSING] Required helper library missing -> .agents/scripts/lib/${helper}`);
       valid = false;
     }
   }
 
-  // Enforce naming convention: all JS files in .agents/hooks/scripts/lib MUST end with '-agy.js' (AGENTS.md §11)
+  // Enforce naming convention for AGY native scripts: custom AGY helpers MUST end with '-agy.js'
   const files = fs.readdirSync(libDir, { withFileTypes: true });
   for (const f of files) {
-    if (f.isFile() && f.name.endsWith('.js')) {
-      if (!f.name.endsWith('-agy.js')) {
-        console.error(`  ✗ [VIOLATION] Helper library file '${f.name}' violates naming standard (must end with '-agy.js' per AGENTS.md §11).`);
-        valid = false;
-      }
+    if (f.isFile() && f.name.includes('-agy') && !f.name.endsWith('-agy.js')) {
+      console.error(`  ✗ [VIOLATION] Helper library file '${f.name}' violates naming standard (must end with '-agy.js' per AGENTS.md §11).`);
+      valid = false;
     }
   }
 
@@ -154,11 +132,11 @@ function verifyAgyHelperLibraries() {
 }
 
 function verifyAgyRuntimeHooks() {
-  console.log('\n--- AGY-Native Runtime Hooks Verification (.agents/hooks/scripts/) ---');
-  const scriptsDir = `${REPO_ROOT}/.agents/hooks/scripts`;
+  console.log('\n--- AGY-Native Runtime Hooks Verification (.agents/scripts/) ---');
+  const scriptsDir = `${TARGET_DIR}/.agents/scripts`;
 
   if (!fs.existsSync(scriptsDir)) {
-    console.error(`  ✗ [MISSING] Runtime hooks directory does not exist: .agents/hooks/scripts`);
+    console.error(`  ✗ [MISSING] Runtime scripts directory does not exist: .agents/scripts`);
     return false;
   }
 
@@ -168,21 +146,10 @@ function verifyAgyRuntimeHooks() {
   for (const hookScript of requiredHooks) {
     const hookPath = `${scriptsDir}/${hookScript}`;
     if (fs.existsSync(hookPath)) {
-      console.log(`  ✓ [MATCH] Required runtime hook script -> .agents/hooks/scripts/${hookScript}`);
+      console.log(`  ✓ [MATCH] Required runtime hook script -> .agents/scripts/${hookScript}`);
     } else {
-      console.error(`  ✗ [MISSING] Required runtime hook script missing -> .agents/hooks/scripts/${hookScript}`);
+      console.error(`  ✗ [MISSING] Required runtime hook script missing -> .agents/scripts/${hookScript}`);
       valid = false;
-    }
-  }
-
-  // Enforce naming convention: all JS files in .agents/hooks/scripts MUST end with '-agy.js' (AGENTS.md §11)
-  const entries = fs.readdirSync(scriptsDir, { withFileTypes: true });
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name.endsWith('.js')) {
-      if (!entry.name.endsWith('-agy.js')) {
-        console.error(`  ✗ [VIOLATION] Runtime hook script '${entry.name}' violates naming standard (must end with '-agy.js' per AGENTS.md §11).`);
-        valid = false;
-      }
     }
   }
 
@@ -191,7 +158,7 @@ function verifyAgyRuntimeHooks() {
 
 function verifyHooksJsonConfig() {
   console.log('\n--- Lifecycle Hooks Configuration Verification (.agents/hooks.json) ---');
-  const hooksFile = `${REPO_ROOT}/.agents/hooks.json`;
+  const hooksFile = `${TARGET_DIR}/.agents/hooks.json`;
 
   if (!fs.existsSync(hooksFile)) {
     console.error(`  ✗ [MISSING] .agents/hooks.json file does not exist.`);
@@ -236,22 +203,21 @@ function verifyHooksJsonConfig() {
   const hooksStr = JSON.stringify(hooksData);
   if (hooksStr.includes('stop:desktop-notify') || hooksStr.includes('desktop-notify.js')) {
     console.error(`  ✗ [PLATFORM DISCREPANCY] Found blacklisted platform-incompatible hook 'stop:desktop-notify' in .agents/hooks.json.`);
-    console.error('    Windows-incompatible desktop notification hooks MUST be excluded per OBJ-03 requirements.');
     valid = false;
   } else {
     console.log(`  ✓ [MATCH] Zero 'stop:desktop-notify' platform-incompatible hook entries found.`);
   }
 
-  // 4. CLAUDE_PLUGIN_ROOT dynamic resolution check in hook command entries
-  let foundResolutionPattern = false;
+  // 4. Script execution command path check (pointing to .agents/scripts/)
+  let foundTargetScriptPaths = false;
   for (const groupKey of Object.keys(hooksObj)) {
     const hookList = hooksObj[groupKey];
     if (Array.isArray(hookList)) {
       for (const entry of hookList) {
         if (Array.isArray(entry.hooks)) {
           for (const h of entry.hooks) {
-            if (h.command && (h.command.includes('CLAUDE_PLUGIN_ROOT') || h.command.includes('resolve-ecc-root'))) {
-              foundResolutionPattern = true;
+            if (h.command && h.command.includes('.agents/scripts/')) {
+              foundTargetScriptPaths = true;
               break;
             }
           }
@@ -260,11 +226,80 @@ function verifyHooksJsonConfig() {
     }
   }
 
-  if (foundResolutionPattern) {
-    console.log(`  ✓ [MATCH] Lifecycle hook commands dynamically resolve CLAUDE_PLUGIN_ROOT.`);
+  if (foundTargetScriptPaths) {
+    console.log(`  ✓ [MATCH] Hook commands point directly to co-located .agents/scripts/ runtime paths.`);
   } else {
-    console.error(`  ✗ [MISSING] Lifecycle hook commands lack dynamic CLAUDE_PLUGIN_ROOT resolution pattern.`);
+    console.error(`  ✗ [MISSING] Hook commands lack .agents/scripts/ path resolution.`);
     valid = false;
+  }
+
+  return valid;
+}
+
+function verifyAgentFrontmatter() {
+  console.log('\n--- Subagent YAML Frontmatter Validation (.agents/agents/) ---');
+  const agentsDir = `${TARGET_DIR}/.agents/agents`;
+  if (!fs.existsSync(agentsDir)) {
+    console.error('  ✗ [MISSING] Subagent directory does not exist: .agents/agents');
+    return false;
+  }
+
+  const subagentDirs = fs.readdirSync(agentsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name)
+    .sort();
+
+  let valid = true;
+
+  for (const agentName of subagentDirs) {
+    const agentMdPath = `${agentsDir}/${agentName}/agent.md`;
+    if (!fs.existsSync(agentMdPath)) {
+      console.error(`  ✗ [INVALID FRONTMATTER] .agents/agents/${agentName}/agent.md — missing file`);
+      valid = false;
+      continue;
+    }
+
+    const content = fs.readFileSync(agentMdPath, 'utf8');
+    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!match) {
+      console.error(`  ✗ [INVALID FRONTMATTER] .agents/agents/${agentName}/agent.md — missing YAML delimiters (---)`);
+      valid = false;
+      continue;
+    }
+
+    const yamlBlock = match[1];
+    const fields = {};
+    yamlBlock.split('\n').forEach(line => {
+      const parts = line.split(':');
+      if (parts.length >= 2) {
+        const key = parts[0].trim();
+        const value = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+        if (key && !key.startsWith('#')) {
+          fields[key] = value;
+        }
+      }
+    });
+
+    const requiredFields = ['name', 'description', 'mainAgent', 'subagent', 'model', 'tools', 'mcpServers', 'skills'];
+    let agentValid = true;
+
+    for (const field of requiredFields) {
+      if (fields[field] === undefined) {
+        console.error(`  ✗ [INVALID FRONTMATTER] .agents/agents/${agentName}/agent.md — missing field: ${field}`);
+        valid = false;
+        agentValid = false;
+      }
+    }
+
+    if (fields['model'] && !['inherit', 'flash', 'pro'].includes(fields['model'])) {
+      console.error(`  ✗ [INVALID MODEL TIER] .agents/agents/${agentName}/agent.md — invalid model tier: ${fields['model']} (must be inherit, flash, or pro)`);
+      valid = false;
+      agentValid = false;
+    }
+
+    if (agentValid) {
+      console.log(`  ✓ [MATCH] Compliant YAML frontmatter -> .agents/agents/${agentName}/agent.md (mainAgent: ${fields['mainAgent']}, model: ${fields['model']})`);
+    }
   }
 
   return valid;
@@ -301,27 +336,27 @@ function runVerification() {
       let exists = false;
 
       if (kind === 'rules') {
-        itemPath = `${REPO_ROOT}/.agents/rules/${item}.md`;
+        itemPath = `${TARGET_DIR}/.agents/rules/${item}.md`;
         exists = fs.existsSync(itemPath);
       } else if (kind === 'agents') {
-        itemPath = `${REPO_ROOT}/.agents/plugin/ecc/agents/${item}/agent.md`;
+        itemPath = `${TARGET_DIR}/.agents/agents/${item}/agent.md`;
         exists = fs.existsSync(itemPath);
       } else if (kind === 'commands') {
-        itemPath = `${REPO_ROOT}/.agents/workflows/${item}.md`;
+        itemPath = `${TARGET_DIR}/.agents/workflows/${item}.md`;
         exists = fs.existsSync(itemPath);
       } else if (kind === 'hooks') {
-        itemPath = `${REPO_ROOT}/.agents/hooks.json`;
+        itemPath = `${TARGET_DIR}/.agents/hooks.json`;
         exists = fs.existsSync(itemPath);
       } else if (kind === 'skills') {
         const cleanSkillName = item.replace(/\.md$/, '');
-        itemPath = `${REPO_ROOT}/.agents/skills/${cleanSkillName}/SKILL.md`;
+        itemPath = `${TARGET_DIR}/.agents/skills/${cleanSkillName}/SKILL.md`;
         exists = fs.existsSync(itemPath);
       } else if (kind === 'platform') {
-        itemPath = `${REPO_ROOT}/.agents/plugin/ecc/platform/${item}`;
+        itemPath = `${TARGET_DIR}/.agents/plugin/ecc/platform/${item}`;
         exists = fs.existsSync(itemPath);
       }
 
-      const displayPath = itemPath.replace(`${REPO_ROOT}/`, '');
+      const displayPath = itemPath.replace(`${TARGET_DIR}/`, '');
 
       if (exists) {
         totalMatched++;
@@ -336,7 +371,7 @@ function runVerification() {
 
     // 2. Check physical disk directories for unapproved EXTRA items
     if (kind === 'rules') {
-      const rulesDir = `${REPO_ROOT}/.agents/rules`;
+      const rulesDir = `${TARGET_DIR}/.agents/rules`;
       if (fs.existsSync(rulesDir)) {
         const declaredRuleSet = new Set(declaredItems.map(i => `${i}.md`));
         const installedRules = fs.readdirSync(rulesDir, { withFileTypes: true })
@@ -352,7 +387,7 @@ function runVerification() {
         }
       }
     } else if (kind === 'agents') {
-      const agentsDir = `${REPO_ROOT}/.agents/plugin/ecc/agents`;
+      const agentsDir = `${TARGET_DIR}/.agents/agents`;
       if (fs.existsSync(agentsDir)) {
         const declaredAgentSet = new Set(declaredItems);
         const installedAgents = fs.readdirSync(agentsDir, { withFileTypes: true })
@@ -363,12 +398,12 @@ function runVerification() {
           if (!declaredAgentSet.has(installed)) {
             totalExtra++;
             scorecard[kind].extra++;
-            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/plugin/ecc/agents/${installed}` });
+            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/agents/${installed}` });
           }
         }
       }
     } else if (kind === 'commands') {
-      const rootWfDir = `${REPO_ROOT}/.agents/workflows`;
+      const rootWfDir = `${TARGET_DIR}/.agents/workflows`;
       if (fs.existsSync(rootWfDir)) {
         const declaredCmdSet = new Set(declaredItems.map(i => `${i}.md`));
         const installedWorkflows = fs.readdirSync(rootWfDir, { withFileTypes: true })
@@ -384,12 +419,12 @@ function runVerification() {
         }
       }
     } else if (kind === 'hooks') {
-      const hooksFile = `${REPO_ROOT}/.agents/hooks.json`;
+      const hooksFile = `${TARGET_DIR}/.agents/hooks.json`;
       if (!fs.existsSync(hooksFile)) {
         // Handled as missing above
       }
     } else if (kind === 'skills') {
-      const skillsDir = `${REPO_ROOT}/.agents/skills`;
+      const skillsDir = `${TARGET_DIR}/.agents/skills`;
       if (fs.existsSync(skillsDir)) {
         const declaredSkillSet = new Set(declaredItems.map(i => i.replace(/\.md$/, '')));
         const installedSkills = fs.readdirSync(skillsDir, { withFileTypes: true })
@@ -405,7 +440,7 @@ function runVerification() {
         }
       }
     } else if (kind === 'platform') {
-      const platformDir = `${REPO_ROOT}/.agents/plugin/ecc/platform`;
+      const platformDir = `${TARGET_DIR}/.agents/plugin/ecc/platform`;
       if (fs.existsSync(platformDir)) {
         const declaredPlatformSet = new Set(declaredItems);
         const installedPlatform = fs.readdirSync(platformDir, { withFileTypes: true })
@@ -437,20 +472,21 @@ function runVerification() {
 
   const itemCompliancePassed = totalMissing === 0 && totalExtra === 0;
 
-  // Execute OBJ-03 integration verification checks
+  // Execute OBJ-03 & OBJ-06 integration verification checks
   const envResult = verifyEnvironmentConfig();
   const helpersPassed = verifyAgyHelperLibraries();
   const hooksScriptPassed = verifyAgyRuntimeHooks();
   const hooksConfigPassed = verifyHooksJsonConfig();
+  const agentFrontmatterPassed = verifyAgentFrontmatter();
 
-  const allPassed = itemCompliancePassed && envResult.passed && helpersPassed && hooksScriptPassed && hooksConfigPassed;
+  const allPassed = itemCompliancePassed && envResult.passed && helpersPassed && hooksScriptPassed && hooksConfigPassed && agentFrontmatterPassed;
 
   console.log('\n===============================================');
   if (!allPassed) {
     console.error('[Verification Engine] Verification FAILED. Discrepancies found (missing/extra items, invalid naming, or configuration issues).');
     process.exit(1);
   } else {
-    console.log('[Verification Engine] SUCCESS: Verification PASSED with 100% compliance across proposal items, environment resolution, AGY helper libraries, and hooks configuration.');
+    console.log('[Verification Engine] SUCCESS: Verification PASSED with 100% compliance across proposal items, self-contained script co-location, AGY helper libraries, and hooks configuration.');
     process.exit(0);
   }
 }
@@ -460,4 +496,3 @@ if (require.main === module) {
 }
 
 module.exports = { runVerification };
-

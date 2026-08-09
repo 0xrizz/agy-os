@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "graphify": {
+      "command": "graphify",
+      "args": [
+        "--mcp"
+      ],
+      "cwd": "d:/dev/agy-os"
+    }
+  }
+}

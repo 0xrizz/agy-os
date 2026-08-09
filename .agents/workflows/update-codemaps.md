@@ -14,7 +14,7 @@ Analyze the codebase structure and generate token-lean architecture documentatio
 
 ## Step 2: Generate Codemaps
 
-Create or update codemaps in `docs/CODEMAPS/` (or `.reports/codemaps/`):
+Create or update codemaps in `docs/docs/system/architecture/codemaps/` (or `.reports/codemaps/`):
 
 | File | Contents |
 |------|----------|
