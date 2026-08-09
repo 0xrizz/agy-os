@@ -52,6 +52,13 @@ Refactor the Antigravity custom installer suite to support arbitrary target repo
 - **Non-Destructive Target Rollback**: `uninstall-agy.sh --target-dir <path>` removes exclusively `<target-dir>/.agents/`. Project source files are never touched. `--dry-run` preview mode available.
 - **Artifacts**: [proposal.md](file:///d:/dev/agy-os/docs/OBJ-07/artifacts/proposal.md) · [ecc-items.json](file:///d:/dev/agy-os/harness/ecc-items.json) · [spec.md](file:///d:/dev/agy-os/docs/OBJ-07/spec.md) · [design.md](file:///d:/dev/agy-os/docs/OBJ-07/design.md) · [task.md](file:///d:/dev/agy-os/docs/OBJ-07/task.md)
 
+### Objective 08 (OBJ-08): Personal Local Product CLI Runner & Multi-Repo Productization (`agy-harness`)
+Productize the multi-repository installer suite established in OBJ-07 into a unified personal CLI runner ([harness/bin/agy-harness.sh](file:///d:/dev/agy-os/harness/bin/agy-harness.sh)) for deploying, verifying, status-checking, and uninstalling `.agents/` across local repositories (such as [frameworks/openspec](file:///d:/dev/agy-os/frameworks/openspec)):
+- **Portable Unified CLI Runner**: Entrypoint `harness/bin/agy-harness.sh` supporting 4 core subcommands (`deploy`, `verify`, `uninstall`, `status`) delegating to underlying scripts in `harness/agy-script/`.
+- **Hybrid Custom Item Architecture**: Baseline master components from `agy-os` are synced 1:1, while local custom items in target standard paths (`.agents/skills/`, `.agents/rules/`, `.agents/agents/`, `.agents/workflows/`) are preserved non-destructively during deployment and reported as `[LOCAL EXTENSION]` during verification.
+- **Production Target Rollout**: Primary deployment executed against [frameworks/openspec](file:///d:/dev/agy-os/frameworks/openspec) (`d:/dev/agy-os/frameworks/openspec`) with 100% baseline parity verification (exit code 0).
+- **Artifacts**: [proposal.md](file:///d:/dev/agy-os/docs/OBJ-08/artifacts/proposal.md) · [runbook.md](file:///d:/dev/agy-os/docs/OBJ-08/artifacts/runbook.md) · [spec.md](file:///d:/dev/agy-os/docs/OBJ-08/spec.md) · [design.md](file:///d:/dev/agy-os/docs/OBJ-08/design.md) · [task.md](file:///d:/dev/agy-os/docs/OBJ-08/task.md)
+
 ---
 
 ## 3. High-Level Architecture

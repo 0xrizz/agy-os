@@ -401,20 +401,6 @@ function runInstallation(isDryRun, configPath) {
 
   console.log('\nExecuting physical asset copying & directory cleanup...');
 
-  // Pre-clean destination directories to purge obsolete files
-  if (fs.existsSync(targetAgentsDir)) {
-    fs.rmSync(targetAgentsDir, { recursive: true, force: true });
-  }
-  if (fs.existsSync(targetRulesDir)) {
-    fs.rmSync(targetRulesDir, { recursive: true, force: true });
-  }
-  if (fs.existsSync(targetWorkflowsDir)) {
-    fs.rmSync(targetWorkflowsDir, { recursive: true, force: true });
-  }
-  if (fs.existsSync(targetSkillsDir)) {
-    fs.rmSync(targetSkillsDir, { recursive: true, force: true });
-  }
-
   // Purge obsolete subdirectories inside .agents/plugin/ecc/ if they exist
   const obsoleteDirs = [
     `${targetPluginDir}/rules`,

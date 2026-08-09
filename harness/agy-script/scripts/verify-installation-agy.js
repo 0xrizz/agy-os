@@ -382,7 +382,7 @@ function runVerification() {
           if (!declaredRuleSet.has(installed)) {
             totalExtra++;
             scorecard[kind].extra++;
-            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/rules/${installed}` });
+            scorecard[kind].items.push({ item: installed, status: 'LOCAL EXTENSION', path: `.agents/rules/${installed}` });
           }
         }
       }
@@ -398,7 +398,7 @@ function runVerification() {
           if (!declaredAgentSet.has(installed)) {
             totalExtra++;
             scorecard[kind].extra++;
-            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/agents/${installed}` });
+            scorecard[kind].items.push({ item: installed, status: 'LOCAL EXTENSION', path: `.agents/agents/${installed}` });
           }
         }
       }
@@ -414,7 +414,7 @@ function runVerification() {
           if (!declaredCmdSet.has(installed)) {
             totalExtra++;
             scorecard[kind].extra++;
-            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/workflows/${installed}` });
+            scorecard[kind].items.push({ item: installed, status: 'LOCAL EXTENSION', path: `.agents/workflows/${installed}` });
           }
         }
       }
@@ -435,7 +435,7 @@ function runVerification() {
           if (!declaredSkillSet.has(installed)) {
             totalExtra++;
             scorecard[kind].extra++;
-            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/skills/${installed}` });
+            scorecard[kind].items.push({ item: installed, status: 'LOCAL EXTENSION', path: `.agents/skills/${installed}` });
           }
         }
       }
@@ -451,7 +451,7 @@ function runVerification() {
           if (!declaredPlatformSet.has(installed)) {
             totalExtra++;
             scorecard[kind].extra++;
-            scorecard[kind].items.push({ item: installed, status: 'EXTRA', path: `.agents/plugin/ecc/platform/${installed}` });
+            scorecard[kind].items.push({ item: installed, status: 'LOCAL EXTENSION', path: `.agents/plugin/ecc/platform/${installed}` });
           }
         }
       }
@@ -460,17 +460,17 @@ function runVerification() {
 
   console.log('=== Proposal Item Compliance Audit Scorecard ===');
   kinds.forEach((kind) => {
-    console.log(`\n[Kind: ${kind}] Declared: ${scorecard[kind].checked}, Matched: ${scorecard[kind].matched}, Missing: ${scorecard[kind].missing}, Extra: ${scorecard[kind].extra}`);
+    console.log(`\n[Kind: ${kind}] Declared: ${scorecard[kind].checked}, Matched: ${scorecard[kind].matched}, Missing: ${scorecard[kind].missing}, Local Extensions: ${scorecard[kind].extra}`);
     scorecard[kind].items.forEach((entry) => {
-      const icon = entry.status === 'MATCH' ? '✓' : entry.status === 'MISSING' ? '✗' : '?';
+      const icon = entry.status === 'MATCH' ? '✓' : entry.status === 'MISSING' ? '✗' : 'ℹ';
       console.log(`  ${icon} [${entry.status}] ${entry.item} -> ${entry.path}`);
     });
   });
 
   console.log('\n===============================================');
-  console.log(`Proposal Items Summary: Declared: ${totalChecked}, Matched: ${totalMatched}, Missing: ${totalMissing}, Extra: ${totalExtra}`);
+  console.log(`Proposal Items Summary: Declared: ${totalChecked}, Matched: ${totalMatched}, Missing: ${totalMissing}, Local Extensions: ${totalExtra}`);
 
-  const itemCompliancePassed = totalMissing === 0 && totalExtra === 0;
+  const itemCompliancePassed = totalMissing === 0;
 
   // Execute OBJ-03 & OBJ-06 integration verification checks
   const envResult = verifyEnvironmentConfig();
